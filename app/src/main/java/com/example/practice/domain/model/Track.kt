@@ -1,4 +1,4 @@
-package com.example.practice.model
+package com.example.practice.domain.model
 
 /** Domain model: id corresponds to trackId, genre to primaryGenreName in iTunes. */
 data class Track(

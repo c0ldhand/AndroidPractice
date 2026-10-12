@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -12,16 +13,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.practice.ui.screens.detail.TrackDetailScreen
+import com.example.practice.ui.screens.detail.TrackDetailRoute
 import com.example.practice.ui.screens.favorites.FavoritesScreen
 import com.example.practice.ui.screens.main.MainScreen
 import com.example.practice.ui.screens.profile.ProfileScreen
 import com.example.practice.ui.screens.tracks.TrackListRoute
 import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackDetailViewModel
+import com.example.practice.viewmodel.TrackViewModelFactory
 
 @Composable
 fun AppNavigation(
     viewModel: TrackViewModel,
+    viewModelFactory: TrackViewModelFactory,
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -61,9 +65,11 @@ fun AppNavigation(
                 route = Screen.TrackDetail.route,
                 arguments = listOf(navArgument(Screen.TrackDetail.TRACK_ID) { type = NavType.LongType })
             ) { entry ->
-                val trackId = entry.arguments?.getLong(Screen.TrackDetail.TRACK_ID)
-                TrackDetailScreen(
-                    track = trackId?.let(viewModel::getTrackById),
+                val detailViewModel: TrackDetailViewModel = viewModel(
+                    viewModelStoreOwner = entry, factory = viewModelFactory
+                )
+                TrackDetailRoute(
+                    viewModel = detailViewModel,
                     onBackClick = { navController.navigateUp() }
                 )
             }

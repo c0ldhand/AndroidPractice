@@ -22,22 +22,36 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.practice.R
-import com.example.practice.model.Track
+import com.example.practice.domain.model.Track
 import com.example.practice.ui.components.TrackArtwork
+import com.example.practice.ui.components.NetworkError
+import com.example.practice.ui.components.NetworkLoading
+import com.example.practice.viewmodel.TrackDetailUiState
+import com.example.practice.viewmodel.TrackDetailViewModel
 import com.example.practice.ui.formatting.formatDuration
 import com.example.practice.ui.formatting.formatPrice
 import com.example.practice.ui.formatting.formatReleaseDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackDetailScreen(track: Track?, onBackClick: () -> Unit) {
+fun TrackDetailRoute(viewModel: TrackDetailViewModel, onBackClick: () -> Unit) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    TrackDetailScreen(state, viewModel::retry, onBackClick)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TrackDetailScreen(state: TrackDetailUiState, onRetry: () -> Unit, onBackClick: () -> Unit) {
+    val track = state.track
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -51,7 +65,11 @@ fun TrackDetailScreen(track: Track?, onBackClick: () -> Unit) {
             )
         }
     ) { innerPadding ->
-        if (track == null) {
+        if (state.isLoading) {
+            NetworkLoading(Modifier.padding(innerPadding))
+        } else if (state.error != null) {
+            NetworkError(state.error, onRetry, Modifier.padding(innerPadding))
+        } else if (track == null) {
             TrackNotFound(onBackClick, Modifier.padding(innerPadding))
         } else {
             LazyColumn(
