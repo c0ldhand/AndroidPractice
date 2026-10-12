@@ -14,10 +14,15 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.chuckerteam.chucker.api.Chucker
+import com.example.practice.BuildConfig
+import com.example.practice.R
 import com.example.practice.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,12 +32,22 @@ fun MainScreen(
     onBottomItemClick: (Screen) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    val context = LocalContext.current
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = if (selectedTab != null) WindowInsets.safeDrawing else WindowInsets(0, 0, 0, 0),
         topBar = {
             if (selectedTab != null) {
-                TopAppBar(title = { Text(stringResource(selectedTab.titleRes)) })
+                TopAppBar(
+                    title = { Text(stringResource(selectedTab.titleRes)) },
+                    actions = {
+                        if (BuildConfig.DEBUG && selectedTab == Screen.Tracks) {
+                            TextButton(onClick = { context.startActivity(Chucker.getLaunchIntent(context)) }) {
+                                Text(stringResource(R.string.network_inspector))
+                            }
+                        }
+                    }
+                )
             }
         },
         bottomBar = {

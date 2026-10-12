@@ -16,7 +16,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.practice.data.MockTrackRepository
+import com.example.practice.domain.usecase.SearchTracksUseCase
+import com.example.practice.domain.usecase.GetTrackDetailsUseCase
+import com.example.practice.viewmodel.TrackViewModelFactory
 import com.example.practice.navigation.AppNavigation
 import com.example.practice.navigation.Screen
 import com.example.practice.ui.theme.PracticeTheme
@@ -37,10 +39,13 @@ class TrackNavigationTest {
 
     @Before
     fun showApp() {
-        val viewModel = TrackViewModel(MockTrackRepository())
+        val repository = FakeTrackRepository()
+        val search = SearchTracksUseCase(repository)
+        val viewModel = TrackViewModel(search)
+        val factory = TrackViewModelFactory(search, GetTrackDetailsUseCase(repository))
         compose.setContent {
             navController = rememberNavController()
-            PracticeTheme { AppNavigation(viewModel, navController) }
+            PracticeTheme { AppNavigation(viewModel, factory, navController) }
         }
     }
 
