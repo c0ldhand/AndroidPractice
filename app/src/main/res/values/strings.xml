@@ -1,3 +1,27 @@
 <resources>
     <string name="app_name">Practice</string>
+    <string name="tracks">Треки</string>
+    <string name="favorites">Избранное</string>
+    <string name="profile">Профиль</string>
+    <string name="track_details">Детали трека</string>
+    <string name="back">Назад</string>
+    <string name="track_not_found">Трек не найден</string>
+    <string name="track_not_found_description">В локальном каталоге нет трека с этим идентификатором.</string>
+    <string name="placeholder_description">Этот экран будет реализован в следующих практиках</string>
+    <string name="local_collection">Локальная музыкальная коллекция</string>
+    <string name="tracks_count">Треков: %1$d</string>
+    <string name="track_information">Информация о треке</string>
+    <string name="track_name">Название</string>
+    <string name="artist">Исполнитель</string>
+    <string name="album">Альбом</string>
+    <string name="genre">Жанр</string>
+    <string name="release_date">Дата выхода</string>
+    <string name="duration">Длительность</string>
+    <string name="price">Цена</string>
+    <string name="price_unavailable">Цена недоступна</string>
+    <string name="currency">Валюта</string>
+    <string name="country">Страна</string>
+    <string name="streaming">Стриминг</string>
+    <string name="streaming_available">Доступен</string>
+    <string name="streaming_unavailable">Недоступен</string>
 </resources>
