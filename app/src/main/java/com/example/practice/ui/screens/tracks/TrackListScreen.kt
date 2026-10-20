@@ -89,6 +89,10 @@ fun TrackListScreen(
                 item(key = "collection_header") {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(stringResource(R.string.search_results, state.submittedQuery), style = MaterialTheme.typography.titleMedium)
+                        if (state.filters.isActive) {
+                            Text(stringResource(R.string.filters_active), style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary)
+                        }
                         Text(
                             stringResource(R.string.tracks_count, state.tracks.size),
                             style = MaterialTheme.typography.bodyMedium,

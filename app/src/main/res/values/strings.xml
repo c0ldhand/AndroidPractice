@@ -1,6 +1,25 @@
 <resources>
     <string name="app_name">Practice</string>
     <string name="tracks">Треки</string>
+    <string name="filters">Фильтры</string>
+    <string name="filters_active">Фильтры применены</string>
+    <string name="filters_description">Настройки сохраняются между запусками. Пустые поля не ограничивают результаты поиска.</string>
+    <string name="genre_example">Например, Dance</string>
+    <string name="album_name_filter">Название альбома</string>
+    <string name="album_example">Например, Discovery</string>
+    <string name="streamable_only">Только доступные для стриминга</string>
+    <string name="reset_filters">Сбросить</string>
+    <string name="done">Готово</string>
+    <string name="saving">Сохранение…</string>
+    <string name="filters_save_failed">Не удалось сохранить настройки. Попробуйте ещё раз.</string>
+    <string name="add_favorite">В избранное</string>
+    <string name="remove_favorite">Убрать из избранного</string>
+    <string name="no_favorites">Здесь будут любимые треки</string>
+    <string name="no_favorites_description">Откройте детали трека и нажмите «В избранное».</string>
+    <string name="favorites_offline">Сохранённые треки и их детали доступны без интернета.</string>
+    <string name="favorites_load_failed">Не удалось прочитать избранное из памяти устройства.</string>
+    <string name="favorite_change_failed">Не удалось изменить избранное. Попробуйте ещё раз.</string>
+    <string name="dismiss">Понятно</string>
     <string name="favorites">Избранное</string>
     <string name="profile">Профиль</string>
     <string name="track_details">Детали трека</string>

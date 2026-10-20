@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.practice.domain.model.TrackError
 import com.example.practice.domain.model.TrackException
 import com.example.practice.domain.usecase.SearchTracksUseCase
+import com.example.practice.domain.model.FilterBadgeCache
+import com.example.practice.domain.model.TrackFilters
+import com.example.practice.domain.repository.FiltersRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,15 +23,32 @@ data class TrackListUiState(
     val tracks: List<Track> = emptyList(),
     val isLoading: Boolean = false,
     val error: TrackError? = null,
-    val isQueryEmpty: Boolean = false
+    val isQueryEmpty: Boolean = false,
+    val filters: TrackFilters = TrackFilters()
 )
 
-class TrackViewModel(private val searchTracks: SearchTracksUseCase) : ViewModel() {
-    private val _uiState = MutableStateFlow(TrackListUiState())
+class TrackViewModel(
+    private val searchTracks: SearchTracksUseCase,
+    private val filtersRepository: FiltersRepository,
+    private val badgeCache: FilterBadgeCache
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(TrackListUiState(filters = filtersRepository.load()))
     val uiState: StateFlow<TrackListUiState> = _uiState.asStateFlow()
+    val showFilterBadge = badgeCache.isVisible
     private var searchJob: Job? = null
 
-    init { search() }
+    init {
+        badgeCache.update(_uiState.value.filters)
+        search()
+    }
+
+    fun onFiltersApplied() {
+        val filters = filtersRepository.load()
+        _uiState.update { it.copy(filters = filters) }
+        badgeCache.update(filters)
+        // Use the submitted query, even if the inline search field contains an unsent draft.
+        load(_uiState.value.submittedQuery.ifBlank { _uiState.value.query.trim() })
+    }
 
     fun updateQuery(query: String) {
         _uiState.update { it.copy(query = query, isQueryEmpty = false) }
@@ -49,7 +69,7 @@ class TrackViewModel(private val searchTracks: SearchTracksUseCase) : ViewModel(
         }
         searchJob = viewModelScope.launch {
             try {
-                val tracks = searchTracks(query)
+                val tracks = searchTracks(query, filters = _uiState.value.filters)
                 _uiState.update { it.copy(tracks = tracks, isLoading = false) }
             } catch (error: CancellationException) {
                 throw error

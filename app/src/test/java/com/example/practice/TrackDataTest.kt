@@ -5,6 +5,7 @@ import com.example.practice.domain.repository.TrackRepository
 import com.example.practice.domain.model.Track
 import com.example.practice.domain.model.TrackError
 import com.example.practice.domain.model.TrackException
+import com.example.practice.domain.model.FilterBadgeCache
 import com.example.practice.domain.usecase.SearchTracksUseCase
 import com.example.practice.domain.usecase.GetTrackDetailsUseCase
 import com.example.practice.viewmodel.TrackViewModel
@@ -43,7 +44,7 @@ class TrackDataTest {
     fun loadingIsVisibleUntilSearchCompletes() = runTest {
         val response = CompletableDeferred<List<Track>>()
         val repository = FakeRepository().also { it.search = { response.await() } }
-        val vm = TrackViewModel(SearchTracksUseCase(repository))
+        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         assertTrue(vm.uiState.value.isLoading)
         runCurrent()
         assertTrue(vm.uiState.value.isLoading)
@@ -57,7 +58,7 @@ class TrackDataTest {
     @Test
     fun retryUsesFailedQueryEvenAfterEditingInput() = runTest {
         val repository = FakeRepository().also { it.search = { throw TrackException(TrackError.CONNECTION) } }
-        val vm = TrackViewModel(SearchTracksUseCase(repository))
+        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         advanceUntilIdle()
         assertEquals(TrackError.CONNECTION, vm.uiState.value.error)
         vm.updateQuery("Queen")
@@ -76,7 +77,7 @@ class TrackDataTest {
         val repository = FakeRepository().also {
             it.search = { query -> if (query == "Daft Punk") oldResponse.await() else listOf(sample.copy(trackName = "Queen")) }
         }
-        val vm = TrackViewModel(SearchTracksUseCase(repository))
+        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         runCurrent()
         vm.updateQuery("Queen")
         vm.search()
@@ -90,7 +91,7 @@ class TrackDataTest {
     @Test
     fun blankQueryDoesNotSendRequestAndEmptyResultIsNotAnError() = runTest {
         val repository = FakeRepository().also { it.search = { emptyList() } }
-        val vm = TrackViewModel(SearchTracksUseCase(repository))
+        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         advanceUntilIdle()
         assertTrue(vm.uiState.value.tracks.isEmpty())
         assertNull(vm.uiState.value.error)

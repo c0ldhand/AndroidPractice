@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +38,8 @@ import com.example.practice.domain.model.Track
 import com.example.practice.ui.components.TrackArtwork
 import com.example.practice.ui.components.NetworkError
 import com.example.practice.ui.components.NetworkLoading
+import com.example.practice.viewmodel.FavoritesViewModel
+import com.example.practice.viewmodel.FavoritesUiState
 import com.example.practice.viewmodel.TrackDetailUiState
 import com.example.practice.viewmodel.TrackDetailViewModel
 import com.example.practice.ui.formatting.formatDuration
@@ -43,14 +48,24 @@ import com.example.practice.ui.formatting.formatReleaseDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackDetailRoute(viewModel: TrackDetailViewModel, onBackClick: () -> Unit) {
+fun TrackDetailRoute(viewModel: TrackDetailViewModel, favoritesViewModel: FavoritesViewModel, onBackClick: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    TrackDetailScreen(state, viewModel::retry, onBackClick)
+    val favorites by favoritesViewModel.uiState.collectAsStateWithLifecycle()
+    TrackDetailScreen(state, favorites, viewModel::retry, favoritesViewModel::toggle,
+        favoritesViewModel::retry, favoritesViewModel::dismissError, onBackClick)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackDetailScreen(state: TrackDetailUiState, onRetry: () -> Unit, onBackClick: () -> Unit) {
+fun TrackDetailScreen(
+    state: TrackDetailUiState,
+    favorites: FavoritesUiState,
+    onRetry: () -> Unit,
+    onToggleFavorite: (Track) -> Unit,
+    onRetryFavorites: () -> Unit,
+    onDismissFavoriteError: () -> Unit,
+    onBackClick: () -> Unit
+) {
     val track = state.track
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -91,6 +106,23 @@ fun TrackDetailScreen(state: TrackDetailUiState, onRetry: () -> Unit, onBackClic
                             textAlign = TextAlign.Center
                         )
                         Text(track.artistName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Button(
+                            onClick = { onToggleFavorite(track) },
+                            enabled = !favorites.isLoading && !favorites.loadFailed && track.id !in favorites.busyIds,
+                            modifier = Modifier.testTag("toggle_favorite")
+                        ) {
+                            val isFavorite = favorites.contains(track.id)
+                            Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = null)
+                            Text(stringResource(if (isFavorite) R.string.remove_favorite else R.string.add_favorite))
+                        }
+                        if (favorites.loadFailed) {
+                            Text(stringResource(R.string.favorites_load_failed), color = MaterialTheme.colorScheme.error)
+                            TextButton(onClick = onRetryFavorites) { Text(stringResource(R.string.retry)) }
+                        }
+                        if (favorites.changeFailed) {
+                            Text(stringResource(R.string.favorite_change_failed), color = MaterialTheme.colorScheme.error)
+                            TextButton(onClick = onDismissFavoriteError) { Text(stringResource(R.string.dismiss)) }
+                        }
                     }
                 }
                 item { TrackInformation(track) }

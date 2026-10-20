@@ -8,6 +8,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -20,6 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.chuckerteam.chucker.api.Chucker
 import com.example.practice.BuildConfig
 import com.example.practice.R
@@ -29,6 +36,8 @@ import com.example.practice.navigation.Screen
 @Composable
 fun MainScreen(
     selectedTab: Screen?,
+    showFilterBadge: Boolean,
+    onFiltersClick: () -> Unit,
     onBottomItemClick: (Screen) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -41,6 +50,18 @@ fun MainScreen(
                 TopAppBar(
                     title = { Text(stringResource(selectedTab.titleRes)) },
                     actions = {
+                        if (selectedTab == Screen.Tracks) {
+                            IconButton(onClick = onFiltersClick, modifier = Modifier.testTag("open_filters")) {
+                                BadgedBox(badge = {
+                                    if (showFilterBadge) {
+                                        val description = stringResource(R.string.filters_active)
+                                        Badge(Modifier.testTag("filter_badge").semantics { contentDescription = description })
+                                    }
+                                }) {
+                                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.filters))
+                                }
+                            }
+                        }
                         if (BuildConfig.DEBUG && selectedTab == Screen.Tracks) {
                             TextButton(onClick = { context.startActivity(Chucker.getLaunchIntent(context)) }) {
                                 Text(stringResource(R.string.network_inspector))

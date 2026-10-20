@@ -4,6 +4,14 @@ import android.content.Context
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.example.practice.data.NetworkTrackRepository
+import androidx.room.Room
+import com.example.practice.data.LocalFirstTrackRepository
+import com.example.practice.data.local.RoomFavoritesRepository
+import com.example.practice.data.local.SharedPreferencesFiltersRepository
+import com.example.practice.data.local.TrackDatabase
+import com.example.practice.domain.model.FilterBadgeCache
+import com.example.practice.domain.repository.FavoritesRepository
+import com.example.practice.domain.repository.FiltersRepository
 import com.example.practice.data.remote.ItunesApi
 import com.example.practice.domain.repository.TrackRepository
 import com.example.practice.domain.usecase.GetTrackDetailsUseCase
@@ -33,8 +41,17 @@ class AppContainer(context: Context) {
         .build()
         .create(ItunesApi::class.java)
 
-    val repository: TrackRepository = NetworkTrackRepository(api)
+    private val database = Room.databaseBuilder(
+        context.applicationContext, TrackDatabase::class.java, "tracks.db"
+    ).build()
+    val filtersRepository: FiltersRepository = SharedPreferencesFiltersRepository(
+        context.getSharedPreferences("track_filters", Context.MODE_PRIVATE)
+    )
+    val favoritesRepository: FavoritesRepository = RoomFavoritesRepository(database.favoriteTrackDao())
+    val filterBadgeCache = FilterBadgeCache()
+    val repository: TrackRepository = LocalFirstTrackRepository(NetworkTrackRepository(api), favoritesRepository)
     val viewModelFactory = TrackViewModelFactory(
-        SearchTracksUseCase(repository), GetTrackDetailsUseCase(repository)
+        SearchTracksUseCase(repository), GetTrackDetailsUseCase(repository),
+        filtersRepository, favoritesRepository, filterBadgeCache
     )
 }
