@@ -18,7 +18,8 @@ import com.example.practice.ui.screens.detail.TrackDetailRoute
 import com.example.practice.ui.screens.favorites.FavoritesRoute
 import com.example.practice.ui.screens.filters.FiltersRoute
 import com.example.practice.ui.screens.main.MainScreen
-import com.example.practice.ui.screens.profile.ProfileScreen
+import com.example.practice.ui.screens.profile.ProfileRoute
+import com.example.practice.ui.screens.profile.ProfileEditRoute
 import com.example.practice.ui.screens.tracks.TrackListRoute
 import com.example.practice.viewmodel.TrackViewModel
 import com.example.practice.viewmodel.TrackDetailViewModel
@@ -41,6 +42,7 @@ fun AppNavigation(
     MainScreen(
         selectedTab = selectedTab,
         showFilterBadge = showFilterBadge,
+        onEditProfile = { navController.navigate(Screen.ProfileEdit.route) { launchSingleTop = true } },
         onFiltersClick = { navController.navigate(Screen.Filters.route) { launchSingleTop = true } },
         onBottomItemClick = { screen ->
             if (screen.route != route) {
@@ -72,7 +74,8 @@ fun AppNavigation(
                     navController.navigate(Screen.TrackDetail.routeFor(trackId)) { launchSingleTop = true }
                 }
             }
-            composable(Screen.Profile.route) { ProfileScreen() }
+            composable(Screen.Profile.route) { ProfileRoute() }
+            composable(Screen.ProfileEdit.route) { ProfileEditRoute(onBack = { navController.navigateUp() }) }
             composable(Screen.Filters.route) { entry ->
                 val filtersViewModel: FiltersViewModel = viewModel(viewModelStoreOwner = entry, factory = viewModelFactory)
                 FiltersRoute(

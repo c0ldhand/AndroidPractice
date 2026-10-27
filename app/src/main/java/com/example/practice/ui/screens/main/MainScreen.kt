@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.IconButton
@@ -38,6 +39,7 @@ fun MainScreen(
     selectedTab: Screen?,
     showFilterBadge: Boolean,
     onFiltersClick: () -> Unit,
+    onEditProfile: () -> Unit,
     onBottomItemClick: (Screen) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -50,6 +52,11 @@ fun MainScreen(
                 TopAppBar(
                     title = { Text(stringResource(selectedTab.titleRes)) },
                     actions = {
+                        if (selectedTab == Screen.Profile) {
+                            IconButton(onClick = onEditProfile, modifier = Modifier.testTag("edit_profile")) {
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.profile_edit))
+                            }
+                        }
                         if (selectedTab == Screen.Tracks) {
                             IconButton(onClick = onFiltersClick, modifier = Modifier.testTag("open_filters")) {
                                 BadgedBox(badge = {

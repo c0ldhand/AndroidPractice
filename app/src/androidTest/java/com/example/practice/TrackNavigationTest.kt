@@ -100,7 +100,7 @@ class TrackNavigationTest {
             compose.onNodeWithTag("empty_favorites").assertIsDisplayed()
             tab("Профиль").performClick()
             tab("Профиль").assertIsSelected().performClick()
-            compose.onNodeWithText("Этот экран будет реализован в следующих практиках").assertIsDisplayed()
+            compose.onNodeWithTag("profile_screen").assertIsDisplayed()
             tab("Треки").performClick()
             tab("Треки").assertIsSelected().performClick()
             compose.onNodeWithText("Enjoy the Silence").assertIsDisplayed()
