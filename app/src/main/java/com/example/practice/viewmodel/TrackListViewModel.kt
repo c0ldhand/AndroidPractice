@@ -9,9 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 data class TrackListUiState(val tracks: List<Track> = emptyList())
 
-class TrackViewModel(private val repository: TrackRepository) : ViewModel() {
+class TrackListViewModel(repository: TrackRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(TrackListUiState(repository.getTracks()))
     val uiState: StateFlow<TrackListUiState> = _uiState.asStateFlow()
-
-    fun getTrackById(id: Long): Track? = repository.getTrackById(id)
 }
