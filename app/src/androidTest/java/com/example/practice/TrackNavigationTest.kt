@@ -1,5 +1,6 @@
 package com.example.practice
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
@@ -11,12 +12,21 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.AnnotatedString
+import com.example.practice.domain.model.FilterBadgeCache
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.practice.data.MockTrackRepository
+import com.example.practice.domain.usecase.SearchTracksUseCase
+import com.example.practice.domain.usecase.GetTrackDetailsUseCase
+import com.example.practice.viewmodel.TrackViewModelFactory
 import com.example.practice.navigation.AppNavigation
 import com.example.practice.navigation.Screen
 import com.example.practice.ui.theme.PracticeTheme
@@ -37,10 +47,16 @@ class TrackNavigationTest {
 
     @Before
     fun showApp() {
-        val viewModel = TrackViewModel(MockTrackRepository())
+        val repository = FakeTrackRepository()
+        val search = SearchTracksUseCase(repository)
+        val filters = TestFiltersRepository()
+        val favorites = TestFavoritesRepository()
+        val badge = FilterBadgeCache()
+        val viewModel = TrackViewModel(search, filters, badge)
+        val factory = TrackViewModelFactory(search, GetTrackDetailsUseCase(repository), filters, favorites, badge)
         compose.setContent {
             navController = rememberNavController()
-            PracticeTheme { AppNavigation(viewModel, navController) }
+            PracticeTheme { AppNavigation(viewModel, factory, navController) }
         }
     }
 
@@ -81,10 +97,10 @@ class TrackNavigationTest {
         repeat(5) {
             tab("Избранное").performClick()
             tab("Избранное").assertIsSelected().performClick()
-            compose.onNodeWithText("Этот экран будет реализован в следующих практиках").assertIsDisplayed()
+            compose.onNodeWithTag("empty_favorites").assertIsDisplayed()
             tab("Профиль").performClick()
             tab("Профиль").assertIsSelected().performClick()
-            compose.onNodeWithText("Этот экран будет реализован в следующих практиках").assertIsDisplayed()
+            compose.onNodeWithTag("profile_screen").assertIsDisplayed()
             tab("Треки").performClick()
             tab("Треки").assertIsSelected().performClick()
             compose.onNodeWithText("Enjoy the Silence").assertIsDisplayed()
@@ -117,4 +133,49 @@ class TrackNavigationTest {
     }
 
     private fun tab(title: String) = compose.onNode(hasText(title) and hasClickAction())
+
+    @Test
+    fun appliesFiltersRestoresFormAndResetsBadge() {
+        compose.onNodeWithTag("filter_badge", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("open_filters").performClick()
+        compose.onNodeWithTag("filter_genre").performTextReplacement("Dance")
+        compose.onNodeWithTag("filter_album").performTextReplacement("Discovery")
+        compose.onNodeWithTag("filter_streamable").performClick()
+        compose.onNodeWithTag("save_filters").performScrollTo().performClick()
+        compose.onNodeWithText("Треков: 1").assertIsDisplayed()
+        compose.onNodeWithTag("filter_badge", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("open_filters").performClick()
+        compose.onNodeWithTag("filter_genre").assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Dance")))
+        compose.onNodeWithTag("filter_album").assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Discovery")))
+        compose.onNodeWithTag("filter_streamable").assertIsOn()
+        compose.onNodeWithText("Сбросить").performClick()
+        compose.onNodeWithTag("save_filters").performScrollTo().performClick()
+        compose.onNodeWithText("Треков: 18").assertIsDisplayed()
+        compose.onNodeWithTag("filter_badge", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun leavingSettingsWithoutDoneDiscardsDraft() {
+        compose.onNodeWithTag("open_filters").performClick()
+        compose.onNodeWithTag("filter_genre").performTextReplacement("Rock")
+        compose.onNodeWithContentDescription("Назад").performClick()
+        compose.onNodeWithText("Треков: 18").assertIsDisplayed()
+        compose.onNodeWithTag("filter_badge", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("open_filters").performClick()
+        compose.onNodeWithTag("filter_genre").assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
+    }
+
+    @Test
+    fun addsToFavoritesOpensDetailsAndRemoves() {
+        compose.onNodeWithTag("track_1").performClick()
+        compose.onNodeWithTag("toggle_favorite").performClick()
+        compose.onNodeWithText("Убрать из избранного").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Назад").performClick()
+        tab("Избранное").performClick()
+        compose.onNodeWithTag("track_1").performClick()
+        compose.onNodeWithTag("detail_title").assertTextEquals("One More Time")
+        compose.onNodeWithTag("toggle_favorite").performClick()
+        compose.onNodeWithContentDescription("Назад").performClick()
+        compose.onNodeWithTag("empty_favorites").assertIsDisplayed()
+    }
 }
