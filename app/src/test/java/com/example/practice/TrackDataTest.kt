@@ -3,7 +3,10 @@ package com.example.practice
 import com.example.practice.data.MockTrackRepository
 import com.example.practice.data.TrackRepository
 import com.example.practice.model.Track
-import com.example.practice.viewmodel.TrackViewModel
+import androidx.lifecycle.SavedStateHandle
+import com.example.practice.navigation.Screen
+import com.example.practice.viewmodel.TrackListViewModel
+import com.example.practice.viewmodel.TrackDetailViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -31,9 +34,13 @@ class TrackDataTest {
             override fun getTracks(): List<Track> = listOf(sample)
             override fun getTrackById(id: Long): Track? = sample.takeIf { it.id == id }
         }
-        val viewModel = TrackViewModel(repository)
+        val viewModel = TrackListViewModel(repository)
         assertEquals(listOf(sample), viewModel.uiState.value.tracks)
-        assertEquals(sample, viewModel.getTrackById(42))
-        assertNull(viewModel.getTrackById(1))
+        val detail = TrackDetailViewModel(repository, SavedStateHandle(mapOf(Screen.TrackDetail.TRACK_ID to 42L)))
+        assertEquals(sample, detail.uiState.value.track)
+        assertEquals("5:20", detail.uiState.value.duration)
+        val missing = TrackDetailViewModel(repository, SavedStateHandle(mapOf(Screen.TrackDetail.TRACK_ID to 1L)))
+        assertNull(missing.uiState.value.track)
+        assertNull(TrackDetailViewModel(repository, SavedStateHandle()).uiState.value.track)
     }
 }

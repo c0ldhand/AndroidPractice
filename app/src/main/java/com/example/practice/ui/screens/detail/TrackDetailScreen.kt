@@ -22,6 +22,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -31,13 +33,25 @@ import androidx.compose.ui.unit.dp
 import com.example.practice.R
 import com.example.practice.model.Track
 import com.example.practice.ui.components.TrackArtwork
-import com.example.practice.ui.formatting.formatDuration
-import com.example.practice.ui.formatting.formatPrice
-import com.example.practice.ui.formatting.formatReleaseDate
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.practice.data.MockTrackRepository
+import com.example.practice.viewmodel.TrackDetailUiState
+import com.example.practice.viewmodel.TrackDetailViewModel
+import com.example.practice.viewmodel.TrackDetailViewModelFactory
+
+@Composable
+fun TrackDetailRoute(onBackClick: () -> Unit) {
+    val factory = remember { TrackDetailViewModelFactory(MockTrackRepository()) }
+    val viewModel: TrackDetailViewModel = viewModel(factory = factory)
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    TrackDetailScreen(state, onBackClick)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackDetailScreen(track: Track?, onBackClick: () -> Unit) {
+fun TrackDetailScreen(state: TrackDetailUiState, onBackClick: () -> Unit) {
+    val track = state.track
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -75,14 +89,14 @@ fun TrackDetailScreen(track: Track?, onBackClick: () -> Unit) {
                         Text(track.artistName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                item { TrackInformation(track) }
+                item { TrackInformation(track, state) }
             }
         }
     }
 }
 
 @Composable
-private fun TrackInformation(track: Track) {
+private fun TrackInformation(track: Track, state: TrackDetailUiState) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.track_information), style = MaterialTheme.typography.titleLarge)
@@ -91,9 +105,9 @@ private fun TrackInformation(track: Track) {
             InformationField(R.string.artist, track.artistName)
             InformationField(R.string.album, track.collectionName)
             InformationField(R.string.genre, track.genre)
-            InformationField(R.string.release_date, formatReleaseDate(track.releaseDate))
-            InformationField(R.string.duration, formatDuration(track.trackTimeMillis))
-            InformationField(R.string.price, formatPrice(track.trackPrice, track.currency) ?: stringResource(R.string.price_unavailable))
+            InformationField(R.string.release_date, state.releaseDate)
+            InformationField(R.string.duration, state.duration)
+            InformationField(R.string.price, state.price ?: stringResource(R.string.price_unavailable))
             InformationField(R.string.currency, track.currency)
             InformationField(R.string.country, track.country)
             InformationField(
