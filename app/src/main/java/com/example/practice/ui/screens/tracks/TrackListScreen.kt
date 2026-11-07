@@ -10,18 +10,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.practice.R
 import com.example.practice.model.Track
 import com.example.practice.ui.components.TrackCard
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.data.MockTrackRepository
+import com.example.practice.viewmodel.TrackListViewModel
+import com.example.practice.viewmodel.TrackListViewModelFactory
 
 @Composable
-fun TrackListRoute(viewModel: TrackViewModel, onTrackClick: (Long) -> Unit) {
+fun TrackListRoute(onTrackClick: (Long) -> Unit) {
+    val factory = remember { TrackListViewModelFactory(MockTrackRepository()) }
+    val viewModel: TrackListViewModel = viewModel(factory = factory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     TrackListScreen(tracks = state.tracks, onTrackClick = onTrackClick)
 }
