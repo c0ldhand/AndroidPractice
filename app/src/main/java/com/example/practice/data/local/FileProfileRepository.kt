@@ -31,7 +31,8 @@ class FileProfileRepository(
                     fullName = json.optString("fullName"),
                     avatarUri = json.optString("avatarUri").takeIf { it.isNotBlank() },
                     resumeUrl = json.optString("resumeUrl"),
-                    position = json.optString("position")
+                    position = json.optString("position"),
+                    favoriteClassTime = json.optString("favoriteClassTime")
                 )
             } else UserProfile()
             current.value = loaded
@@ -47,6 +48,7 @@ class FileProfileRepository(
                 .put("avatarUri", profile.avatarUri.orEmpty())
                 .put("resumeUrl", profile.resumeUrl)
                 .put("position", profile.position)
+                .put("favoriteClassTime", profile.favoriteClassTime)
             val stream = file.startWrite()
             try {
                 stream.write(json.toString().toByteArray(Charsets.UTF_8))

@@ -3,9 +3,12 @@ package com.example.practice.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.practice.domain.model.ClassTime
 import com.example.practice.domain.model.UserProfile
 import com.example.practice.domain.repository.ProfileMediaRepository
 import com.example.practice.domain.repository.ProfileRepository
+import com.example.practice.domain.usecase.ClassReminderScheduleException
+import com.example.practice.domain.usecase.ClassTimeUnavailableException
 import com.example.practice.domain.usecase.InvalidResumeUrlException
 import com.example.practice.domain.usecase.SaveProfileUseCase
 import kotlinx.coroutines.CancellationException
@@ -26,7 +29,11 @@ data class ProfileEditUiState(
     val gallery: List<String>? = null,
     val error: ProfileError? = null,
     val saved: Boolean = false
-)
+) {
+    val hasValidClassTime: Boolean get() = ClassTime.parse(draft.favoriteClassTime) != null
+    val canSave: Boolean get() = !loading && !saving && !mediaBusy && !saved &&
+        error != ProfileError.LOAD && hasValidClassTime
+}
 
 class ProfileEditViewModel(
     private val repository: ProfileRepository,
@@ -48,7 +55,8 @@ class ProfileEditViewModel(
                 val profile = if (savedState.get<Boolean>("draftLoaded") == true) {
                     UserProfile(
                         savedState["fullName"] ?: "", savedState["avatarUri"],
-                        savedState["resumeUrl"] ?: "", savedState["position"] ?: ""
+                        savedState["resumeUrl"] ?: "", savedState["position"] ?: "",
+                        savedState["favoriteClassTime"] ?: ""
                     )
                 } else repository.load()
                 updateDraft(profile)
@@ -64,11 +72,13 @@ class ProfileEditViewModel(
         savedState["avatarUri"] = profile.avatarUri
         savedState["resumeUrl"] = profile.resumeUrl
         savedState["position"] = profile.position
+        savedState["favoriteClassTime"] = profile.favoriteClassTime
         state.update { it.copy(draft = profile, error = null) }
     }
     fun setName(value: String) = updateDraft(state.value.draft.copy(fullName = value))
     fun setPosition(value: String) = updateDraft(state.value.draft.copy(position = value))
     fun setResumeUrl(value: String) = updateDraft(state.value.draft.copy(resumeUrl = value))
+    fun setFavoriteClassTime(value: String) = updateDraft(state.value.draft.copy(favoriteClassTime = value))
     fun clearError() { state.update { it.copy(error = null) } }
     fun closeGallery() { state.update { it.copy(gallery = null) } }
 
@@ -133,7 +143,7 @@ class ProfileEditViewModel(
 
     fun save() {
         val snapshot = state.value
-        if (snapshot.loading || snapshot.saving || snapshot.mediaBusy || snapshot.error == ProfileError.LOAD) return
+        if (!snapshot.canSave) return
         state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             try {
@@ -141,6 +151,8 @@ class ProfileEditViewModel(
                 state.update { it.copy(saved = true) }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: InvalidResumeUrlException) { state.update { it.copy(error = ProfileError.INVALID_URL) } }
+            catch (_: ClassTimeUnavailableException) { state.update { it.copy(error = ProfileError.CLASS_TIME_UNAVAILABLE) } }
+            catch (_: ClassReminderScheduleException) { state.update { it.copy(error = ProfileError.REMINDER_SCHEDULE) } }
             catch (_: Exception) { state.update { it.copy(error = ProfileError.SAVE) } }
             finally { state.update { it.copy(saving = false) } }
         }

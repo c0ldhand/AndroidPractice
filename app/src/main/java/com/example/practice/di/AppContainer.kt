@@ -15,7 +15,9 @@ import com.example.practice.domain.repository.FiltersRepository
 import com.example.practice.data.remote.ItunesApi
 import com.example.practice.domain.repository.TrackRepository
 import com.example.practice.domain.usecase.GetTrackDetailsUseCase
+import com.example.practice.domain.usecase.SaveProfileUseCase
 import com.example.practice.domain.usecase.SearchTracksUseCase
+import com.example.practice.platform.reminders.ClassReminderScheduler
 import com.example.practice.viewmodel.TrackViewModelFactory
 import com.example.practice.viewmodel.ProfileViewModelFactory
 import com.example.practice.data.DownloadedResumeRepository
@@ -28,6 +30,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class AppContainer(context: Context) {
     private val profileRepository = FileProfileRepository(context.filesDir)
+    val classReminderScheduler = ClassReminderScheduler(context.applicationContext)
     val profileViewModelFactory = ProfileViewModelFactory(
         profileRepository,
         AndroidProfileMediaRepository(context.applicationContext),
@@ -35,7 +38,8 @@ class AppContainer(context: Context) {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .callTimeout(60, TimeUnit.SECONDS)
-            .build())
+            .build()),
+        SaveProfileUseCase(profileRepository, classReminderScheduler::schedule)
     )
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)

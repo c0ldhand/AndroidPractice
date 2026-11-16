@@ -13,6 +13,8 @@ import com.example.practice.viewmodel.ProfileEditViewModel
 import com.example.practice.viewmodel.ProfileError
 import com.example.practice.viewmodel.ProfileViewModel
 import java.io.IOException
+import java.util.Calendar
+import java.util.TimeZone
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,23 +39,47 @@ class ProfileViewModelTest {
     @Test fun draftIsSeparateAndSaveImmediatelyUpdatesObservedProfile() = runTest(main.dispatcher) {
         val repository = MemoryProfile(UserProfile(fullName = "Old name"))
         val profile = ProfileViewModel(repository, MemoryResumes())
-        val edit = editor(repository)
+        val scheduled = mutableListOf<Pair<Long, String>>()
+        val edit = editor(repository, schedule = { time, name -> scheduled.add(time to name) })
         advanceUntilIdle()
         edit.setName("  New name  ")
         edit.setResumeUrl("example.com/resume.pdf")
+        edit.setFavoriteClassTime("12:30")
         assertEquals("Old name", profile.uiState.value.profile.fullName)
         edit.save()
         advanceUntilIdle()
         assertTrue(edit.uiState.value.saved)
         assertEquals("New name", profile.uiState.value.profile.fullName)
         assertEquals("https://example.com/resume.pdf", repository.profile.value.resumeUrl)
+        assertEquals("12:30", repository.profile.value.favoriteClassTime)
+        val trigger = today().apply { set(Calendar.MINUTE, 30) }.timeInMillis
+        assertEquals(listOf(trigger to "New name"), scheduled)
+    }
+
+    @Test fun rejectsEmptyMalformedAndPastClassTime() = runTest(main.dispatcher) {
+        val repository = MemoryProfile()
+        val edit = editor(repository, schedule = { _, _ -> fail("Unexpected alarm") })
+        advanceUntilIdle()
+        for (time in listOf("", "9:05", "12:5", "12-05", "24:00", "12:60", "12:05 ", "text")) {
+            edit.setFavoriteClassTime(time)
+            assertFalse(edit.uiState.value.canSave)
+            edit.save()
+        }
+        edit.setFavoriteClassTime("11:59")
+        assertTrue(edit.uiState.value.hasValidClassTime)
+        edit.save()
+        advanceUntilIdle()
+        assertEquals(ProfileError.CLASS_TIME_UNAVAILABLE, edit.uiState.value.error)
+        assertEquals(UserProfile(), repository.profile.value)
     }
 
     @Test fun failedSaveKeepsDraftAndDoesNotNavigateOrChangeProfile() = runTest(main.dispatcher) {
         val repository = MemoryProfile(UserProfile(fullName = "Saved"))
-        val edit = editor(repository)
+        val scheduledNames = mutableListOf<String>()
+        val edit = editor(repository, schedule = { _, name -> scheduledNames.add(name) })
         advanceUntilIdle()
         edit.setName("Draft")
+        edit.setFavoriteClassTime("12:30")
         repository.failSave = true
         edit.save()
         advanceUntilIdle()
@@ -61,10 +87,12 @@ class ProfileViewModelTest {
         assertFalse(edit.uiState.value.saved)
         assertEquals("Draft", edit.uiState.value.draft.fullName)
         assertEquals("Saved", repository.profile.value.fullName)
+        assertTrue(scheduledNames.isEmpty())
         repository.failSave = false
         edit.save()
         advanceUntilIdle()
         assertTrue(edit.uiState.value.saved)
+        assertEquals(listOf("Draft"), scheduledNames)
     }
 
     @Test fun invalidUrlLeavesFormOpenAndDoesNotWrite() = runTest(main.dispatcher) {
@@ -72,6 +100,7 @@ class ProfileViewModelTest {
         val edit = editor(repository)
         advanceUntilIdle()
         edit.setResumeUrl("not a URL")
+        edit.setFavoriteClassTime("12:30")
         edit.save()
         advanceUntilIdle()
         assertEquals(ProfileError.INVALID_URL, edit.uiState.value.error)
@@ -86,6 +115,7 @@ class ProfileViewModelTest {
         val edit = editor(repository, media, handle)
         advanceUntilIdle()
         edit.setName("Draft name")
+        edit.setFavoriteClassTime("18:05")
         edit.prepareCamera()
         advanceUntilIdle()
         val restored = editor(repository, media, handle)
@@ -93,6 +123,7 @@ class ProfileViewModelTest {
         restored.cameraResult(true)
         advanceUntilIdle()
         assertEquals("Draft name", restored.uiState.value.draft.fullName)
+        assertEquals("18:05", restored.uiState.value.draft.favoriteClassTime)
         assertEquals("content://owned/avatar.jpg", restored.uiState.value.draft.avatarUri)
         assertEquals(listOf("content://owned/camera.jpg"), media.deleted)
         assertEquals(UserProfile(), repository.profile.value)
@@ -144,8 +175,17 @@ class ProfileViewModelTest {
         assertEquals(ProfileError.DOWNLOAD, vm.uiState.value.error)
     }
 
-    private fun editor(repo: MemoryProfile, media: MemoryMedia = MemoryMedia(), handle: SavedStateHandle = SavedStateHandle()) =
-        ProfileEditViewModel(repo, media, SaveProfileUseCase(repo), handle)
+    private fun today() = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(2026, Calendar.NOVEMBER, 7, 12, 0, 0)
+    }
+
+    private fun editor(
+        repo: MemoryProfile,
+        media: MemoryMedia = MemoryMedia(),
+        handle: SavedStateHandle = SavedStateHandle(),
+        schedule: (Long, String) -> Unit = { _, _ -> }
+    ) = ProfileEditViewModel(repo, media, SaveProfileUseCase(repo, schedule, ::today), handle)
 }
 
 private class MemoryProfile(initial: UserProfile = UserProfile()) : ProfileRepository {

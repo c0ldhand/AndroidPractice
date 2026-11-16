@@ -28,7 +28,7 @@ class ProfileStorageTest {
     @Test fun jsonSurvivesRepositoryRecreationAndPreservesUnicode() = runBlocking {
         val directory = File(context.cacheDir, "profile-test-${System.nanoTime()}").apply { mkdirs() }
         try {
-            val profile = UserProfile("Иванов Иван Иванович", "content://owned/avatar.jpg", "https://example.com/cv.pdf", "Разработчик")
+            val profile = UserProfile("Иванов Иван Иванович", "content://owned/avatar.jpg", "https://example.com/cv.pdf", "Разработчик", "18:30")
             val first = FileProfileRepository(directory)
             assertEquals(UserProfile(), first.load())
             first.save(profile)

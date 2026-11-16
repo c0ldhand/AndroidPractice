@@ -12,12 +12,13 @@ import com.example.practice.domain.usecase.SaveProfileUseCase
 class ProfileViewModelFactory(
     private val repository: ProfileRepository,
     private val media: ProfileMediaRepository,
-    private val resumes: ResumeRepository
+    private val resumes: ResumeRepository,
+    private val saveProfile: SaveProfileUseCase
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         val viewModel = when (modelClass) {
             ProfileViewModel::class.java -> ProfileViewModel(repository, resumes)
-            ProfileEditViewModel::class.java -> ProfileEditViewModel(repository, media, SaveProfileUseCase(repository), extras.createSavedStateHandle())
+            ProfileEditViewModel::class.java -> ProfileEditViewModel(repository, media, saveProfile, extras.createSavedStateHandle())
             else -> error("Unknown ViewModel: ${modelClass.name}")
         }
         @Suppress("UNCHECKED_CAST")

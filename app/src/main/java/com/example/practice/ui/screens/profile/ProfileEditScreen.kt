@@ -3,9 +3,11 @@ package com.example.practice.ui.screens.profile
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,7 +41,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,10 +69,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.practice.PracticeApplication
 import com.example.practice.R
+import com.example.practice.domain.model.ClassTime
 import com.example.practice.ui.components.ProfileAvatar
 import com.example.practice.viewmodel.ProfileEditUiState
 import com.example.practice.viewmodel.ProfileEditViewModel
 import com.example.practice.viewmodel.ProfileError
+import java.util.Calendar
 
 internal fun imagePermissions(): Array<String> = when {
     Build.VERSION.SDK_INT >= 34 -> arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
@@ -81,9 +89,37 @@ internal fun hasImageAccess(context: Context): Boolean = imagePermissions().any 
 @Composable
 fun ProfileEditRoute(onBack: () -> Unit) {
     val context = LocalContext.current
-    val factory = (context.applicationContext as PracticeApplication).container.profileViewModelFactory
-    val viewModel: ProfileEditViewModel = viewModel(factory = factory)
+    val container = (context.applicationContext as PracticeApplication).container
+    val viewModel: ProfileEditViewModel = viewModel(factory = container.profileViewModelFactory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val reminders = container.classReminderScheduler
+    val packageUri = Uri.fromParts("package", context.packageName, null)
+    var showNotificationSettings by rememberSaveable { mutableStateOf(false) }
+    val exactAlarmSettings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        when {
+            !reminders.canScheduleExactAlarms() ->
+                Toast.makeText(context, R.string.class_reminder_exact_alarms_disabled, Toast.LENGTH_LONG).show()
+            !reminders.notificationsEnabled() -> showNotificationSettings = true
+            else -> viewModel.save()
+        }
+    }
+    fun saveWithPermissions() {
+        when {
+            !reminders.notificationsEnabled() -> showNotificationSettings = true
+            reminders.canScheduleExactAlarms() -> viewModel.save()
+            else -> try {
+                exactAlarmSettings.launch(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, packageUri))
+            } catch (_: ActivityNotFoundException) {
+                Toast.makeText(context, R.string.class_reminder_settings_unavailable, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        saveWithPermissions()
+    }
+    val notificationSettings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (reminders.notificationsEnabled()) saveWithPermissions()
+    }
     var permissionRequested by rememberSaveable { mutableStateOf(false) }
     var openGalleryAfterPermission by rememberSaveable { mutableStateOf(false) }
     val mediaPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -122,10 +158,17 @@ fun ProfileEditRoute(onBack: () -> Unit) {
     ProfileEditScreen(
         state = state,
         onBack = onBack,
-        onSave = viewModel::save,
+        onSave = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else saveWithPermissions()
+        },
         onNameChange = viewModel::setName,
         onPositionChange = viewModel::setPosition,
         onResumeChange = viewModel::setResumeUrl,
+        onClassTimeChange = viewModel::setFavoriteClassTime,
         onGallery = {
             if (hasImageAccess(context)) viewModel.showGallery()
             else {
@@ -147,6 +190,26 @@ fun ProfileEditRoute(onBack: () -> Unit) {
         onRetry = viewModel::reload,
         onDismissError = viewModel::clearError
     )
+    if (showNotificationSettings) AlertDialog(
+        onDismissRequest = { showNotificationSettings = false },
+        text = { Text(stringResource(R.string.class_reminder_notifications_disabled)) },
+        dismissButton = {
+            TextButton({ showNotificationSettings = false }) { Text(stringResource(R.string.profile_cancel)) }
+        },
+        confirmButton = {
+            TextButton({
+                showNotificationSettings = false
+                val settings = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                } else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri)
+                try {
+                    notificationSettings.launch(settings)
+                } catch (_: ActivityNotFoundException) {
+                    Toast.makeText(context, R.string.class_reminder_settings_unavailable, Toast.LENGTH_LONG).show()
+                }
+            }) { Text(stringResource(R.string.class_reminder_open_settings)) }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,6 +221,7 @@ fun ProfileEditScreen(
     onNameChange: (String) -> Unit,
     onPositionChange: (String) -> Unit,
     onResumeChange: (String) -> Unit,
+    onClassTimeChange: (String) -> Unit,
     onGallery: () -> Unit,
     onCamera: () -> Unit,
     onSelectImage: (String) -> Unit,
@@ -167,6 +231,7 @@ fun ProfileEditScreen(
     onDismissError: () -> Unit
 ) {
     var chooseSource by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
     val busy = state.saving || state.mediaBusy
     BackHandler(enabled = state.saving) { /* Finish the atomic save before leaving. */ }
     Scaffold(
@@ -176,7 +241,14 @@ fun ProfileEditScreen(
                 title = { Text(stringResource(R.string.profile_edit)) },
                 navigationIcon = { IconButton(onBack, enabled = !state.saving) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
-                    IconButton(onSave, enabled = !state.loading && !busy && state.error != ProfileError.LOAD, modifier = Modifier.testTag("save_profile")) {
+                    IconButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            onSave()
+                        },
+                        enabled = state.canSave,
+                        modifier = Modifier.testTag("save_profile")
+                    ) {
                         Icon(Icons.Default.Check, stringResource(R.string.done))
                     }
                 }
@@ -213,7 +285,17 @@ fun ProfileEditScreen(
                     state.draft.position, onPositionChange, Modifier.fillMaxWidth().testTag("profile_position_input"),
                     enabled = !state.saving, label = { Text(stringResource(R.string.profile_position)) }, singleLine = true
                 )
-                if (state.error != null) {
+                ClassTimeField(
+                    value = state.draft.favoriteClassTime,
+                    enabled = !state.saving,
+                    error = when {
+                        !state.hasValidClassTime -> R.string.profile_class_time_invalid
+                        state.error == ProfileError.CLASS_TIME_UNAVAILABLE -> R.string.profile_class_time_unavailable
+                        else -> null
+                    },
+                    onChange = onClassTimeChange
+                )
+                if (state.error != null && state.error != ProfileError.CLASS_TIME_UNAVAILABLE) {
                     Text(stringResource(profileErrorString(state.error)), color = MaterialTheme.colorScheme.error)
                     TextButton(onDismissError) { Text(stringResource(R.string.dismiss)) }
                 }
@@ -249,4 +331,52 @@ fun ProfileEditScreen(
         },
         confirmButton = { TextButton(onCloseGallery) { Text(stringResource(R.string.profile_cancel)) } }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ClassTimeField(value: String, enabled: Boolean, error: Int?, onChange: (String) -> Unit) {
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    TextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth().testTag("profile_class_time_input"),
+        enabled = enabled,
+        label = { Text(stringResource(R.string.profile_class_time)) },
+        placeholder = { Text("HH:mm") },
+        isError = error != null,
+        supportingText = error?.let { { Text(stringResource(it)) } },
+        singleLine = true,
+        trailingIcon = {
+            IconButton(
+                onClick = {
+                    focusManager.clearFocus()
+                    showPicker = true
+                },
+                enabled = enabled
+            ) {
+                Icon(painterResource(R.drawable.ic_class_time), stringResource(R.string.profile_pick_class_time))
+            }
+        }
+    )
+    if (showPicker) {
+        val initialTime = remember {
+            ClassTime.parse(value) ?: Calendar.getInstance().let {
+                ClassTime(it.get(Calendar.HOUR_OF_DAY), it.get(Calendar.MINUTE))
+            }
+        }
+        val time = rememberTimePickerState(initialTime.hour, initialTime.minute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showPicker = false },
+            text = { TimePicker(state = time) },
+            dismissButton = { TextButton({ showPicker = false }) { Text(stringResource(R.string.profile_cancel)) } },
+            confirmButton = {
+                TextButton({
+                    onChange(ClassTime(time.hour, time.minute).format())
+                    showPicker = false
+                }) { Text(stringResource(android.R.string.ok)) }
+            }
+        )
+    }
 }

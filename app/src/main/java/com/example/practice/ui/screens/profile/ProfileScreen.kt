@@ -100,6 +100,8 @@ internal fun profileErrorString(error: ProfileError): Int = when (error) {
     ProfileError.LOAD -> R.string.profile_load_failed
     ProfileError.SAVE -> R.string.profile_save_failed
     ProfileError.INVALID_URL -> R.string.profile_invalid_url
+    ProfileError.CLASS_TIME_UNAVAILABLE -> R.string.profile_class_time_unavailable
+    ProfileError.REMINDER_SCHEDULE -> R.string.profile_reminder_schedule_failed
     ProfileError.PHOTO -> R.string.profile_photo_failed
     ProfileError.GALLERY -> R.string.profile_gallery_failed
     ProfileError.CAMERA -> R.string.profile_camera_failed

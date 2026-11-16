@@ -14,7 +14,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class ProfileError { LOAD, SAVE, INVALID_URL, PHOTO, GALLERY, CAMERA, DOWNLOAD, NO_VIEWER }
+enum class ProfileError {
+    LOAD, SAVE, INVALID_URL, CLASS_TIME_UNAVAILABLE, REMINDER_SCHEDULE, PHOTO, GALLERY, CAMERA, DOWNLOAD, NO_VIEWER
+}
 
 data class ProfileUiState(
     val profile: UserProfile = UserProfile(),

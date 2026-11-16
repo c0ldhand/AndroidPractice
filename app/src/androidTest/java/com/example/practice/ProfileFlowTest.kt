@@ -1,6 +1,9 @@
 package com.example.practice
 
+import android.Manifest
+import android.app.AlarmManager
 import android.content.ContentValues
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -16,6 +19,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -94,14 +98,23 @@ class ProfileFlowTest {
             compose.onNodeWithTag("profile_name_input").performTextReplacement("Иванов Иван Иванович")
             compose.onNodeWithTag("profile_resume_input").performTextReplacement("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf")
             compose.onNodeWithTag("profile_position_input").performTextReplacement("Android-разработчик")
+            compose.onNodeWithTag("profile_class_time_input").performScrollTo().performTextReplacement("23:59")
             androidx.test.espresso.Espresso.closeSoftKeyboard()
             pause()
+            val needsNotificationPermission = Build.VERSION.SDK_INT >= 33 &&
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             compose.onNodeWithTag("save_profile").assertIsEnabled().performClick()
+            if (needsNotificationPermission) clickSystem(resource("permission_allow_button"))
+            if (Build.VERSION.SDK_INT >= 31 && !context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()) {
+                clickSystem(resource("switch_widget"), By.pkg("com.android.settings").checkable(true))
+                device.pressBack()
+            }
             compose.waitUntil(15000) { compose.onAllNodes(androidx.compose.ui.test.hasTestTag("profile_name")).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("profile_name").assertTextEquals("Иванов Иван Иванович")
             snapshot("profile-filled")
             val saved = runBlocking { FileProfileRepository(context.filesDir).load() }
             assertEquals("Android-разработчик", saved.position)
+            assertEquals("23:59", saved.favoriteClassTime)
             assertNotNull(saved.avatarUri)
             context.contentResolver.delete(photo, null, null)
             compose.activityRule.scenario.recreate()
