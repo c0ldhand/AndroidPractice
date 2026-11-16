@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -12,22 +14,38 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.practice.feature.profile.ProfileComponent
 import com.example.practice.ui.screens.detail.TrackDetailRoute
-import com.example.practice.ui.screens.favorites.FavoritesScreen
+import com.example.practice.ui.screens.favorites.FavoritesRoute
+import com.example.practice.ui.screens.filters.FiltersRoute
 import com.example.practice.ui.screens.main.MainScreen
-import com.example.practice.ui.screens.profile.ProfileScreen
+import com.example.practice.feature.profile.ui.screens.profile.ProfileRoute
+import com.example.practice.feature.profile.ui.screens.profile.ProfileEditRoute
 import com.example.practice.ui.screens.tracks.TrackListRoute
+import com.example.practice.viewmodel.TrackListViewModel
+import com.example.practice.viewmodel.TrackDetailViewModel
+import com.example.practice.viewmodel.TrackViewModelFactory
+import com.example.practice.viewmodel.FavoritesViewModel
+import com.example.practice.viewmodel.FiltersViewModel
 
 @Composable
 fun AppNavigation(
+    viewModel: TrackListViewModel,
+    viewModelFactory: TrackViewModelFactory,
+    profileComponent: ProfileComponent,
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val route = backStackEntry?.destination?.route
     val selectedTab = Screen.bottomItems.firstOrNull { it.route == route }
+    val showFilterBadge by viewModel.showFilterBadge.collectAsStateWithLifecycle()
+    val favoritesViewModel: FavoritesViewModel = viewModel(factory = viewModelFactory)
 
     MainScreen(
         selectedTab = selectedTab,
+        showFilterBadge = showFilterBadge,
+        onEditProfile = { navController.navigate(Screen.ProfileEdit.route) { launchSingleTop = true } },
+        onFiltersClick = { navController.navigate(Screen.Filters.route) { launchSingleTop = true } },
         onBottomItemClick = { screen ->
             if (screen.route != route) {
                 navController.navigate(screen.route) {
@@ -45,6 +63,7 @@ fun AppNavigation(
         ) {
             composable(Screen.Tracks.route) {
                 TrackListRoute(
+                    viewModel = viewModel,
                     onTrackClick = { trackId ->
                         navController.navigate(Screen.TrackDetail.routeFor(trackId)) {
                             launchSingleTop = true
@@ -52,13 +71,36 @@ fun AppNavigation(
                     }
                 )
             }
-            composable(Screen.Favorites.route) { FavoritesScreen() }
-            composable(Screen.Profile.route) { ProfileScreen() }
+            composable(Screen.Favorites.route) {
+                FavoritesRoute(favoritesViewModel) { trackId ->
+                    navController.navigate(Screen.TrackDetail.routeFor(trackId)) { launchSingleTop = true }
+                }
+            }
+            composable(Screen.Profile.route) { ProfileRoute(profileComponent) }
+            composable(Screen.ProfileEdit.route) {
+                ProfileEditRoute(profileComponent, onBack = { navController.navigateUp() })
+            }
+            composable(Screen.Filters.route) { entry ->
+                val filtersViewModel: FiltersViewModel = viewModel(viewModelStoreOwner = entry, factory = viewModelFactory)
+                FiltersRoute(
+                    viewModel = filtersViewModel,
+                    onBack = { navController.navigateUp() },
+                    onApplied = {
+                        viewModel.onFiltersApplied()
+                        navController.navigateUp()
+                    }
+                )
+            }
             composable(
                 route = Screen.TrackDetail.route,
                 arguments = listOf(navArgument(Screen.TrackDetail.TRACK_ID) { type = NavType.LongType })
-            ) {
+            ) { entry ->
+                val detailViewModel: TrackDetailViewModel = viewModel(
+                    viewModelStoreOwner = entry, factory = viewModelFactory
+                )
                 TrackDetailRoute(
+                    viewModel = detailViewModel,
+                    favoritesViewModel = favoritesViewModel,
                     onBackClick = { navController.navigateUp() }
                 )
             }

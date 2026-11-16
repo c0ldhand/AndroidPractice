@@ -2,30 +2,55 @@ package com.example.practice.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.practice.data.TrackRepository
-import com.example.practice.model.Track
+import androidx.lifecycle.viewModelScope
+import com.example.practice.domain.model.Track
+import com.example.practice.domain.model.TrackError
+import com.example.practice.domain.model.TrackException
+import com.example.practice.domain.usecase.GetTrackDetailsUseCase
 import com.example.practice.navigation.Screen
 import com.example.practice.ui.formatting.formatDuration
 import com.example.practice.ui.formatting.formatPrice
 import com.example.practice.ui.formatting.formatReleaseDate
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class TrackDetailUiState(
     val track: Track? = null,
-    val releaseDate: String = "",
-    val duration: String = "",
-    val price: String? = null
-)
+    val isLoading: Boolean = true,
+    val error: TrackError? = null
+) {
+    val releaseDate: String get() = track?.let { formatReleaseDate(it.releaseDate) }.orEmpty()
+    val duration: String get() = track?.let { formatDuration(it.trackTimeMillis) }.orEmpty()
+    val price: String? get() = track?.let { formatPrice(it.trackPrice, it.currency) }
+}
 
-class TrackDetailViewModel(repository: TrackRepository, savedStateHandle: SavedStateHandle) : ViewModel() {
-    private val track = savedStateHandle.get<Long>(Screen.TrackDetail.TRACK_ID)?.let(repository::getTrackById)
-    val uiState = MutableStateFlow(
-        TrackDetailUiState(
-            track = track,
-            releaseDate = track?.let { formatReleaseDate(it.releaseDate) }.orEmpty(),
-            duration = track?.let { formatDuration(it.trackTimeMillis) }.orEmpty(),
-            price = track?.let { formatPrice(it.trackPrice, it.currency) }
-        )
-    ).asStateFlow()
+class TrackDetailViewModel(
+    savedStateHandle: SavedStateHandle,
+    private val getTrackDetails: GetTrackDetailsUseCase
+) : ViewModel() {
+    private val trackId: Long = savedStateHandle[Screen.TrackDetail.TRACK_ID] ?: -1L
+    private val _uiState = MutableStateFlow(TrackDetailUiState())
+    val uiState = _uiState.asStateFlow()
+    private var loadJob: Job? = null
+
+    init { retry() }
+
+    fun retry() {
+        loadJob?.cancel()
+        _uiState.value = TrackDetailUiState()
+        loadJob = viewModelScope.launch {
+            try {
+                _uiState.value = TrackDetailUiState(track = getTrackDetails(trackId), isLoading = false)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _uiState.value = TrackDetailUiState(
+                    isLoading = false, error = (error as? TrackException)?.error ?: TrackError.UNKNOWN
+                )
+            }
+        }
+    }
 }

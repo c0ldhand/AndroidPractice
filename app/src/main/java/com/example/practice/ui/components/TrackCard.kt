@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.practice.model.Track
+import com.example.practice.domain.model.Track
 
 @Composable
 fun TrackCard(track: Track, onTrackClick: (Long) -> Unit, modifier: Modifier = Modifier) {
