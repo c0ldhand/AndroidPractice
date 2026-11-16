@@ -8,7 +8,7 @@ import com.example.practice.domain.model.TrackException
 import com.example.practice.domain.model.FilterBadgeCache
 import com.example.practice.domain.usecase.SearchTracksUseCase
 import com.example.practice.domain.usecase.GetTrackDetailsUseCase
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackListViewModel
 import com.example.practice.viewmodel.TrackDetailViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,7 +44,7 @@ class TrackDataTest {
     fun loadingIsVisibleUntilSearchCompletes() = runTest {
         val response = CompletableDeferred<List<Track>>()
         val repository = FakeRepository().also { it.search = { response.await() } }
-        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
+        val vm = TrackListViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         assertTrue(vm.uiState.value.isLoading)
         runCurrent()
         assertTrue(vm.uiState.value.isLoading)
@@ -58,7 +58,7 @@ class TrackDataTest {
     @Test
     fun retryUsesFailedQueryEvenAfterEditingInput() = runTest {
         val repository = FakeRepository().also { it.search = { throw TrackException(TrackError.CONNECTION) } }
-        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
+        val vm = TrackListViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         advanceUntilIdle()
         assertEquals(TrackError.CONNECTION, vm.uiState.value.error)
         vm.updateQuery("Queen")
@@ -77,7 +77,7 @@ class TrackDataTest {
         val repository = FakeRepository().also {
             it.search = { query -> if (query == "Daft Punk") oldResponse.await() else listOf(sample.copy(trackName = "Queen")) }
         }
-        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
+        val vm = TrackListViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         runCurrent()
         vm.updateQuery("Queen")
         vm.search()
@@ -91,7 +91,7 @@ class TrackDataTest {
     @Test
     fun blankQueryDoesNotSendRequestAndEmptyResultIsNotAnError() = runTest {
         val repository = FakeRepository().also { it.search = { emptyList() } }
-        val vm = TrackViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
+        val vm = TrackListViewModel(SearchTracksUseCase(repository), MemoryFiltersRepository(), FilterBadgeCache())
         advanceUntilIdle()
         assertTrue(vm.uiState.value.tracks.isEmpty())
         assertNull(vm.uiState.value.error)
@@ -114,6 +114,9 @@ class TrackDataTest {
         advanceUntilIdle()
         assertEquals(42L, repository.lastId)
         assertEquals(sample, vm.uiState.value.track)
+        assertEquals("6:09", vm.uiState.value.duration)
+        assertEquals("19.04.2013", vm.uiState.value.releaseDate)
+        assertTrue(vm.uiState.value.price?.contains("1.29") == true)
         assertNull(vm.uiState.value.error)
     }
 

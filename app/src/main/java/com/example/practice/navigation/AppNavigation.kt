@@ -21,7 +21,7 @@ import com.example.practice.ui.screens.main.MainScreen
 import com.example.practice.ui.screens.profile.ProfileRoute
 import com.example.practice.ui.screens.profile.ProfileEditRoute
 import com.example.practice.ui.screens.tracks.TrackListRoute
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackListViewModel
 import com.example.practice.viewmodel.TrackDetailViewModel
 import com.example.practice.viewmodel.TrackViewModelFactory
 import com.example.practice.viewmodel.FavoritesViewModel
@@ -29,7 +29,7 @@ import com.example.practice.viewmodel.FiltersViewModel
 
 @Composable
 fun AppNavigation(
-    viewModel: TrackViewModel,
+    viewModel: TrackListViewModel,
     viewModelFactory: TrackViewModelFactory,
     navController: NavHostController = rememberNavController()
 ) {

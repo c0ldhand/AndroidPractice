@@ -19,7 +19,7 @@ class TrackViewModelFactory(
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         val viewModel = when (modelClass) {
-            TrackViewModel::class.java -> TrackViewModel(searchTracks, filtersRepository, badgeCache)
+            TrackListViewModel::class.java -> TrackListViewModel(searchTracks, filtersRepository, badgeCache)
             TrackDetailViewModel::class.java -> TrackDetailViewModel(extras.createSavedStateHandle(), getTrackDetails)
             FiltersViewModel::class.java -> FiltersViewModel(extras.createSavedStateHandle(), filtersRepository, badgeCache)
             FavoritesViewModel::class.java -> FavoritesViewModel(favoritesRepository)

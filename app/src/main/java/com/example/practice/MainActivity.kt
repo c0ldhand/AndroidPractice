@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.practice.navigation.AppNavigation
 import com.example.practice.ui.theme.PracticeTheme
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackListViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             PracticeTheme {
                 val factory = (application as PracticeApplication).container.viewModelFactory
-                val trackViewModel: TrackViewModel = viewModel(factory = factory)
+                val trackViewModel: TrackListViewModel = viewModel(factory = factory)
                 AppNavigation(viewModel = trackViewModel, viewModelFactory = factory)
             }
         }

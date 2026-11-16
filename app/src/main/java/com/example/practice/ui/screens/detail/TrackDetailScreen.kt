@@ -42,9 +42,6 @@ import com.example.practice.viewmodel.FavoritesViewModel
 import com.example.practice.viewmodel.FavoritesUiState
 import com.example.practice.viewmodel.TrackDetailUiState
 import com.example.practice.viewmodel.TrackDetailViewModel
-import com.example.practice.ui.formatting.formatDuration
-import com.example.practice.ui.formatting.formatPrice
-import com.example.practice.ui.formatting.formatReleaseDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,14 +122,14 @@ fun TrackDetailScreen(
                         }
                     }
                 }
-                item { TrackInformation(track) }
+                item { TrackInformation(track, state) }
             }
         }
     }
 }
 
 @Composable
-private fun TrackInformation(track: Track) {
+private fun TrackInformation(track: Track, state: TrackDetailUiState) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.track_information), style = MaterialTheme.typography.titleLarge)
@@ -141,9 +138,9 @@ private fun TrackInformation(track: Track) {
             InformationField(R.string.artist, track.artistName)
             InformationField(R.string.album, track.collectionName)
             InformationField(R.string.genre, track.genre)
-            InformationField(R.string.release_date, formatReleaseDate(track.releaseDate))
-            InformationField(R.string.duration, formatDuration(track.trackTimeMillis))
-            InformationField(R.string.price, formatPrice(track.trackPrice, track.currency) ?: stringResource(R.string.price_unavailable))
+            InformationField(R.string.release_date, state.releaseDate)
+            InformationField(R.string.duration, state.duration)
+            InformationField(R.string.price, state.price ?: stringResource(R.string.price_unavailable))
             InformationField(R.string.currency, track.currency)
             InformationField(R.string.country, track.country)
             InformationField(

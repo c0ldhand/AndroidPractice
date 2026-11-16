@@ -30,7 +30,7 @@ import com.example.practice.viewmodel.TrackViewModelFactory
 import com.example.practice.navigation.AppNavigation
 import com.example.practice.navigation.Screen
 import com.example.practice.ui.theme.PracticeTheme
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackListViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -52,7 +52,7 @@ class TrackNavigationTest {
         val filters = TestFiltersRepository()
         val favorites = TestFavoritesRepository()
         val badge = FilterBadgeCache()
-        val viewModel = TrackViewModel(search, filters, badge)
+        val viewModel = TrackListViewModel(search, filters, badge)
         val factory = TrackViewModelFactory(search, GetTrackDetailsUseCase(repository), filters, favorites, badge)
         compose.setContent {
             navController = rememberNavController()

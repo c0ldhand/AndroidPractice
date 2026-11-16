@@ -10,7 +10,7 @@ import com.example.practice.domain.repository.FiltersRepository
 import com.example.practice.domain.repository.TrackRepository
 import com.example.practice.domain.usecase.SearchTracksUseCase
 import com.example.practice.viewmodel.FiltersViewModel
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackListViewModel
 import com.example.practice.viewmodel.FavoritesViewModel
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
@@ -90,7 +90,7 @@ class LocalStorageTest {
         val repository = Catalog(listOf(track, track.copy(id = 2, genre = "Rock")))
         val filters = MemoryFiltersRepository(TrackFilters(genre = "dance"))
         val badge = FilterBadgeCache()
-        val vm = TrackViewModel(SearchTracksUseCase(repository), filters, badge)
+        val vm = TrackListViewModel(SearchTracksUseCase(repository), filters, badge)
         advanceUntilIdle()
         assertEquals(listOf(track), vm.uiState.value.tracks)
         assertTrue(badge.isVisible.value)

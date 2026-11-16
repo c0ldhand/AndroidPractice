@@ -27,7 +27,7 @@ data class TrackListUiState(
     val filters: TrackFilters = TrackFilters()
 )
 
-class TrackViewModel(
+class TrackListViewModel(
     private val searchTracks: SearchTracksUseCase,
     private val filtersRepository: FiltersRepository,
     private val badgeCache: FilterBadgeCache

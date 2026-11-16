@@ -7,6 +7,10 @@ import com.example.practice.domain.model.Track
 import com.example.practice.domain.model.TrackError
 import com.example.practice.domain.model.TrackException
 import com.example.practice.domain.usecase.GetTrackDetailsUseCase
+import com.example.practice.navigation.Screen
+import com.example.practice.ui.formatting.formatDuration
+import com.example.practice.ui.formatting.formatPrice
+import com.example.practice.ui.formatting.formatReleaseDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,13 +21,17 @@ data class TrackDetailUiState(
     val track: Track? = null,
     val isLoading: Boolean = true,
     val error: TrackError? = null
-)
+) {
+    val releaseDate: String get() = track?.let { formatReleaseDate(it.releaseDate) }.orEmpty()
+    val duration: String get() = track?.let { formatDuration(it.trackTimeMillis) }.orEmpty()
+    val price: String? get() = track?.let { formatPrice(it.trackPrice, it.currency) }
+}
 
 class TrackDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val getTrackDetails: GetTrackDetailsUseCase
 ) : ViewModel() {
-    private val trackId: Long = savedStateHandle["trackId"] ?: -1L
+    private val trackId: Long = savedStateHandle[Screen.TrackDetail.TRACK_ID] ?: -1L
     private val _uiState = MutableStateFlow(TrackDetailUiState())
     val uiState = _uiState.asStateFlow()
     private var loadJob: Job? = null

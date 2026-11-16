@@ -32,10 +32,10 @@ import com.example.practice.ui.components.TrackCard
 import com.example.practice.ui.components.NetworkError
 import com.example.practice.ui.components.NetworkLoading
 import com.example.practice.viewmodel.TrackListUiState
-import com.example.practice.viewmodel.TrackViewModel
+import com.example.practice.viewmodel.TrackListViewModel
 
 @Composable
-fun TrackListRoute(viewModel: TrackViewModel, onTrackClick: (Long) -> Unit) {
+fun TrackListRoute(viewModel: TrackListViewModel, onTrackClick: (Long) -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     TrackListScreen(state, viewModel::updateQuery, viewModel::search, viewModel::retry, onTrackClick)
 }
