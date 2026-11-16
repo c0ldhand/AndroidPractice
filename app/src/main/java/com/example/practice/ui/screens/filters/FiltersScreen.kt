@@ -1,5 +1,6 @@
 package com.example.practice.ui.screens.filters
 
+import com.example.practice.core.ui.R as CoreUiR
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,7 +63,7 @@ fun FiltersScreen(
                 title = { Text(stringResource(R.string.filters)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, enabled = !state.isSaving) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(CoreUiR.string.back))
                     }
                 },
                 actions = {
@@ -114,7 +115,7 @@ fun FiltersScreen(
                 enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth().testTag("save_filters")
             ) {
-                Text(stringResource(if (state.isSaving) R.string.saving else R.string.done))
+                Text(stringResource(if (state.isSaving) R.string.saving else CoreUiR.string.done))
             }
         }
     }

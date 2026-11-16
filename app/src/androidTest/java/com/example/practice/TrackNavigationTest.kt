@@ -23,13 +23,14 @@ import com.example.practice.domain.model.FilterBadgeCache
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.practice.domain.usecase.SearchTracksUseCase
 import com.example.practice.domain.usecase.GetTrackDetailsUseCase
 import com.example.practice.viewmodel.TrackViewModelFactory
 import com.example.practice.navigation.AppNavigation
 import com.example.practice.navigation.Screen
-import com.example.practice.ui.theme.PracticeTheme
+import com.example.practice.core.ui.theme.PracticeTheme
 import com.example.practice.viewmodel.TrackListViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -56,7 +57,13 @@ class TrackNavigationTest {
         val factory = TrackViewModelFactory(search, GetTrackDetailsUseCase(repository), filters, favorites, badge)
         compose.setContent {
             navController = rememberNavController()
-            PracticeTheme { AppNavigation(viewModel, factory, navController) }
+            PracticeTheme {
+                AppNavigation(
+                    viewModel, factory,
+                    ApplicationProvider.getApplicationContext<PracticeApplication>().container.profileComponent,
+                    navController
+                )
+            }
         }
     }
 

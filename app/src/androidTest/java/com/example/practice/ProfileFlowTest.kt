@@ -27,11 +27,12 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import com.example.practice.data.local.FileProfileRepository
+import com.example.practice.feature.profile.data.local.FileProfileRepository
 import java.io.File
 import java.util.regex.Pattern
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Assume.assumeFalse
 import org.junit.FixMethodOrder
 import org.junit.Rule
@@ -49,8 +50,14 @@ class ProfileFlowTest {
     private val device get() = UiDevice.getInstance(instrumentation)
     private val demo get() = InstrumentationRegistry.getArguments().getString("recordDemo") == "true"
 
+    @Before
+    fun prepareSystemUiAutomation() {
+        // Configure accessibility before opening permission dialogs or the camera.
+        device.waitForIdle()
+    }
+
     @Test fun a_deniedStoragePermissionClosesEditor() {
-        assumeFalse(com.example.practice.ui.screens.profile.hasImageAccess(context))
+        assumeFalse(hasImageAccess())
         openProfile()
         compose.onNodeWithTag("edit_profile").performClick()
         compose.waitForIdle()
@@ -68,7 +75,7 @@ class ProfileFlowTest {
             snapshot("profile-empty")
             compose.onNodeWithTag("edit_profile").performClick()
             compose.waitForIdle()
-            if (!com.example.practice.ui.screens.profile.hasImageAccess(context)) {
+            if (!hasImageAccess()) {
                 clickSystem(resource("permission_allow_all_button"), resource("permission_allow_button"), resource("permission_allow_foreground_only_button"))
             }
             compose.onNodeWithTag("edit_avatar").assertIsDisplayed().performClick()
@@ -139,11 +146,20 @@ class ProfileFlowTest {
     }
 
     private fun avatarFiles() = File(context.filesDir, "avatars").listFiles()?.toList().orEmpty()
+    private fun hasImageAccess(): Boolean {
+        val permissions = when {
+            Build.VERSION.SDK_INT >= 34 -> listOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+            Build.VERSION.SDK_INT >= 33 -> listOf(Manifest.permission.READ_MEDIA_IMAGES)
+            else -> listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        return permissions.any { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+    }
     private fun resource(id: String) = By.res(Pattern.compile(".*:id/$id"))
 
     private fun clickSystem(vararg selectors: BySelector) {
         val deadline = System.currentTimeMillis() + 15000
         while (System.currentTimeMillis() < deadline) {
+            refreshSystemUi()
             for (selector in selectors) {
                 val node = device.findObject(selector)
                 if (node != null) { pause(); node.click(); return }
@@ -157,9 +173,10 @@ class ProfileFlowTest {
     }
 
     private fun waitForCameraShutter(): androidx.test.uiautomator.UiObject2 {
-        val selector = By.res(Pattern.compile(".*:id/(shutter_button|shutter|photo_capture)"))
+        val selector = By.res(Pattern.compile(".*:id/(shutter_button|shutter|photo_capture)")).enabled(true)
         val deadline = System.currentTimeMillis() + 30000
         while (System.currentTimeMillis() < deadline) {
+            refreshSystemUi()
             device.findObject(selector)?.let { return it }
             listOf("permission_allow_foreground_only_button", "permission_allow_button").forEach { id -> device.findObject(resource(id))?.click() }
             // AOSP Camera's optional location-tagging introduction.
@@ -169,6 +186,11 @@ class ProfileFlowTest {
             Thread.sleep(200)
         }
         error("System camera did not show its shutter button")
+    }
+
+    private fun refreshSystemUi() {
+        // System windows can change without invalidating UiAutomator's cached nodes.
+        if (Build.VERSION.SDK_INT >= 34) instrumentation.uiAutomation.clearCache()
     }
 
     private fun createGalleryPhoto(): android.net.Uri {

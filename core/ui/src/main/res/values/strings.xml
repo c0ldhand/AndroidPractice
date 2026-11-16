@@ -1,0 +1,6 @@
+<resources>
+    <string name="done">Готово</string>
+    <string name="dismiss">Понятно</string>
+    <string name="back">Назад</string>
+    <string name="retry">Повторить</string>
+</resources>

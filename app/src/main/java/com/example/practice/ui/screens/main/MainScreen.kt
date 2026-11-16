@@ -1,5 +1,6 @@
 package com.example.practice.ui.screens.main
 
+import com.example.practice.feature.profile.R as ProfileR
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,7 +55,7 @@ fun MainScreen(
                     actions = {
                         if (selectedTab == Screen.Profile) {
                             IconButton(onClick = onEditProfile, modifier = Modifier.testTag("edit_profile")) {
-                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.profile_edit))
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(ProfileR.string.profile_edit))
                             }
                         }
                         if (selectedTab == Screen.Tracks) {

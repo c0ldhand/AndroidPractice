@@ -1,5 +1,6 @@
 package com.example.practice.ui.screens.detail
 
+import com.example.practice.core.ui.R as CoreUiR
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -71,7 +72,7 @@ fun TrackDetailScreen(
                 title = { Text(stringResource(R.string.track_details)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(CoreUiR.string.back))
                     }
                 }
             )
@@ -114,11 +115,11 @@ fun TrackDetailScreen(
                         }
                         if (favorites.loadFailed) {
                             Text(stringResource(R.string.favorites_load_failed), color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = onRetryFavorites) { Text(stringResource(R.string.retry)) }
+                            TextButton(onClick = onRetryFavorites) { Text(stringResource(CoreUiR.string.retry)) }
                         }
                         if (favorites.changeFailed) {
                             Text(stringResource(R.string.favorite_change_failed), color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = onDismissFavoriteError) { Text(stringResource(R.string.dismiss)) }
+                            TextButton(onClick = onDismissFavoriteError) { Text(stringResource(CoreUiR.string.dismiss)) }
                         }
                     }
                 }
@@ -168,6 +169,6 @@ private fun TrackNotFound(onBackClick: () -> Unit, modifier: Modifier = Modifier
     ) {
         Text(stringResource(R.string.track_not_found), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.track_not_found_description), textAlign = TextAlign.Center)
-        Button(onClick = onBackClick) { Text(stringResource(R.string.back)) }
+        Button(onClick = onBackClick) { Text(stringResource(CoreUiR.string.back)) }
     }
 }

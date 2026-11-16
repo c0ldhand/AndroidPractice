@@ -14,12 +14,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.practice.feature.profile.ProfileComponent
 import com.example.practice.ui.screens.detail.TrackDetailRoute
 import com.example.practice.ui.screens.favorites.FavoritesRoute
 import com.example.practice.ui.screens.filters.FiltersRoute
 import com.example.practice.ui.screens.main.MainScreen
-import com.example.practice.ui.screens.profile.ProfileRoute
-import com.example.practice.ui.screens.profile.ProfileEditRoute
+import com.example.practice.feature.profile.ui.screens.profile.ProfileRoute
+import com.example.practice.feature.profile.ui.screens.profile.ProfileEditRoute
 import com.example.practice.ui.screens.tracks.TrackListRoute
 import com.example.practice.viewmodel.TrackListViewModel
 import com.example.practice.viewmodel.TrackDetailViewModel
@@ -31,6 +32,7 @@ import com.example.practice.viewmodel.FiltersViewModel
 fun AppNavigation(
     viewModel: TrackListViewModel,
     viewModelFactory: TrackViewModelFactory,
+    profileComponent: ProfileComponent,
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -74,8 +76,10 @@ fun AppNavigation(
                     navController.navigate(Screen.TrackDetail.routeFor(trackId)) { launchSingleTop = true }
                 }
             }
-            composable(Screen.Profile.route) { ProfileRoute() }
-            composable(Screen.ProfileEdit.route) { ProfileEditRoute(onBack = { navController.navigateUp() }) }
+            composable(Screen.Profile.route) { ProfileRoute(profileComponent) }
+            composable(Screen.ProfileEdit.route) {
+                ProfileEditRoute(profileComponent, onBack = { navController.navigateUp() })
+            }
             composable(Screen.Filters.route) { entry ->
                 val filtersViewModel: FiltersViewModel = viewModel(viewModelStoreOwner = entry, factory = viewModelFactory)
                 FiltersRoute(

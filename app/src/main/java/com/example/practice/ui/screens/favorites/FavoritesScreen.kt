@@ -1,5 +1,6 @@
 package com.example.practice.ui.screens.favorites
 
+import com.example.practice.core.ui.R as CoreUiR
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,7 +41,7 @@ fun FavoritesScreen(state: FavoritesUiState, onRetry: () -> Unit, onTrackClick: 
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(stringResource(R.string.favorites_load_failed))
-            Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            Button(onClick = onRetry) { Text(stringResource(CoreUiR.string.retry)) }
         }
         state.tracks.isEmpty() -> Column(
             Modifier.fillMaxSize().padding(24.dp).testTag("empty_favorites"),

@@ -1,5 +1,6 @@
 package com.example.practice.ui.components
 
+import com.example.practice.core.ui.R as CoreUiR
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,7 +49,7 @@ fun NetworkError(error: TrackError, onRetry: () -> Unit, modifier: Modifier = Mo
         Text(stringResource(R.string.loading_failed), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(message), textAlign = TextAlign.Center)
         Button(onClick = onRetry, modifier = Modifier.testTag("network_retry")) {
-            Text(stringResource(R.string.retry))
+            Text(stringResource(CoreUiR.string.retry))
         }
     }
 }
