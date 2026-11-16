@@ -1,9 +1,10 @@
-package com.example.practice.data
+package com.example.practice
 
-import com.example.practice.model.Track
+import com.example.practice.domain.model.Track
+import com.example.practice.domain.repository.TrackRepository
 
 /** Local study data; dates and prices are illustrative, not an API response. */
-class MockTrackRepository : TrackRepository {
+class FakeTrackRepository : TrackRepository {
     private val tracks = listOf(
         track(1, "One More Time", "Daft Punk", "Discovery", "Dance", "2000-11-30", 320357),
         track(2, "Bohemian Rhapsody", "Queen", "A Night at the Opera", "Rock", "1975-10-31", 354000),
@@ -25,9 +26,9 @@ class MockTrackRepository : TrackRepository {
         track(18, "Enjoy the Silence", "Depeche Mode", "Violator", "Electronic", "1990-02-05", 372000, isStreamable = false)
     )
 
-    override fun getTracks(): List<Track> = tracks.toList()
+    override suspend fun searchTracks(query: String, limit: Int): List<Track> = tracks.toList()
 
-    override fun getTrackById(id: Long): Track? = tracks.firstOrNull { it.id == id }
+    override suspend fun getTrackById(id: Long): Track? = tracks.firstOrNull { it.id == id }
 
     private fun track(
         id: Long,
